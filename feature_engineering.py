@@ -19,6 +19,7 @@ plt.style.use("ggplot")
 
 # %% load
 df = pd.read_csv("data/train-checkpoint2.csv", index_col=False)
+df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
 df.head()
 
 # %% Text length
@@ -82,6 +83,11 @@ punc_regex = re.compile('[%s]' % re.escape(string.punctuation))
 lemmatizer = WordNetLemmatizer()
 stop_words = set(stopwords.words('english'))
 
+def remove_links(text: str) -> str:
+    text = text.lower()
+    text = re.sub(r"[\s\n]+", " ", text)
+    return re.sub("https?://\S+|www\.\S+", "", text)
+
 def normalize_text(text: str) -> Iterable[str]:
     text = text.lower()
     # Get rid of urls
@@ -101,6 +107,7 @@ def normalize_text(text: str) -> Iterable[str]:
     return splited
 
 df["text_norm"] = df["text"].apply(normalize_text)
+df["text"] = df["text"].apply(remove_links)
 
 # %% Remove super short sentances < 5 words
 sum(df["text_norm"].apply(len) < 5)
@@ -214,13 +221,14 @@ spache_readability
 df["flesch_reading_ease"] = df["text"].apply(ts.flesch_reading_ease)
 df["gulpease_index"] = df["text"].apply(ts.gulpease_index)
 df["text_standard"] = df["text"].apply(lambda x: ts.text_standard(x, float_output=True))
+df["smog_index"] = df["text"].apply(ts.smog_index)
 
 
 # Also I will be keeping the mean_word_len
 
-# %% Check correlation between those statistics
+# %% Check correlation between those statistics and pick good onces
 
-df_stats = df[["mean_word_len", "flesch_reading_ease", "gulpease_index", "text_standard", "real"]]
+df_stats = df[["mean_word_len", "gulpease_index", "smog_index", "real"]]
 
 per_corr_matrix = df_stats.corr(method="pearson")
 
@@ -243,12 +251,71 @@ sns.heatmap(spear_corr_matrix,
             linewidth=0.5
             )
 
-# As we find out those 3 statistics from textstat are preety similar.
-# I will be keeping the flesch_reading_ease
-
+# I will be keeping the gulpease_index, smog_index and the mean_word_len
 # %% Pick columns for final df
+df = df[["text", "text_norm", "gulpease_index", "smog_index", "mean_word_len", "real"]]
 
-df = df[["text", "text_norm", "flesch_reading_ease", "mean_word_len", "real"]]
+# %% Explore outliner in gulpease_index
+sns.boxplot(df, y="gulpease_index", x="real")
+
+fre_mean, fre_std = np.mean(df["gulpease_index"]), np.std(df["gulpease_index"])
+
+print(fre_mean, fre_std)
+
+weird = df[df["gulpease_index"] < -75]
+weird
+
+# Those records contain to much noise and some js code. I will remove them
+df = df.drop(weird.index)
+
+# %% Explore outliner in smog_index
+sns.boxplot(df, y="smog_index", x="real")
+
+fre_mean, fre_std = np.mean(df["smog_index"]), np.std(df["smog_index"])
+
+print(fre_mean, fre_std)
+
+weird = df[df["smog_index"] > 27]
+weird
+# Those records provide actual information so we should keep them
+
+# %% Explore outliner in mean_word_len
+sns.boxplot(df, y="mean_word_len", x="real")
+
+fre_mean, fre_std = np.mean(df["mean_word_len"]), np.std(df["mean_word_len"])
+
+print(fre_mean, fre_std)
+
+weird = df[df["mean_word_len"] > 10]
+weird
+
+# Those records contain raw code or raw links with images. I will remove them
+df = df.drop(weird.index)
+
+# %% Last check for the correlation matrix
+
+df_stats = df[["mean_word_len", "gulpease_index", "smog_index", "real"]]
+
+per_corr_matrix = df_stats.corr(method="pearson")
+
+sns.heatmap(per_corr_matrix, 
+            xticklabels=per_corr_matrix.columns,
+            yticklabels=per_corr_matrix.columns,
+            cmap='RdBu_r',
+            annot=True,
+            linewidth=0.5
+            )
+
+
+spear_corr_matrix = df_stats.corr(method="spearman")
+
+sns.heatmap(spear_corr_matrix,
+            xticklabels=spear_corr_matrix.columns,
+            yticklabels=spear_corr_matrix.columns,
+            cmap='RdBu_r',
+            annot=True,
+            linewidth=0.5
+            )
 
 # %% Checkpoint 3
 
