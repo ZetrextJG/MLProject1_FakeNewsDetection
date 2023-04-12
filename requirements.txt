@@ -1,6 +1,9 @@
 langdetect
 matplotlib
 nltk
+spacy
+langdetect
+textstat
 numpy
 pandas
 seaborn

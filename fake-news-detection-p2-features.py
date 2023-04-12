@@ -258,6 +258,7 @@ df = df[["text", "text_norm", "gulpease_index", "smog_index", "mean_word_len", "
 # %% Explore outliner in gulpease_index
 sns.boxplot(df, y="gulpease_index", x="real")
 
+
 fre_mean, fre_std = np.mean(df["gulpease_index"]), np.std(df["gulpease_index"])
 
 print(fre_mean, fre_std)
