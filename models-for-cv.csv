@@ -1,0 +1,4 @@
+,name,dense_units_text,dense_units_num,dense_units_concat,batch_size
+0,model0,64,16,16,40
+1,model1,32,16,16,40
+2,model2,32,16,16,30
