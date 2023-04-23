@@ -11,4 +11,5 @@ tensorflow
 scikit-learn
 tqdm 
 keras_tuner
+dill
 
