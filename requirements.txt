@@ -10,3 +10,5 @@ seaborn
 tensorflow
 scikit-learn
 tqdm 
+keras_tuner
+
